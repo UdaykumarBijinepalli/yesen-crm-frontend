@@ -1,5 +1,5 @@
 export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api/v1';
+  import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
 const TOKEN_KEY = 'yesen_crm_token';
 
@@ -38,7 +38,7 @@ export class ApiError extends Error {
  * for JSON bodies.
  */
 export async function apiRequest(path, { method = 'GET', body, params, signal } = {}) {
-  const url = new URL(`${API_BASE_URL}${path}`);
+  const url = new URL(`${API_BASE_URL}${path}`, window.location.origin);
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
