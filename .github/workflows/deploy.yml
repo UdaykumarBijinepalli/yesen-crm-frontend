@@ -1,26 +1,25 @@
-name: Deploy Frontend to Worker
+name: Direct Frontend Deploy to EC2 Minikube
 
 on:
   push:
-    branches:
-      - main
-  workflow_dispatch:
+    branches: [ "main", "master" ]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Ansible Frontend Deployment on Master
+      - name: Trigger Remote Build & Rollout on EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.MASTER_HOST }}
-          username: ubuntu
-          key: ${{ secrets.MASTER_SSH_KEY }}
-          port: 22
-          script_stop: true
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            echo "Starting targeted Frontend deployment..."
-            export GH_PAT="${{ secrets.GH_PAT }}"
-            cd /home/ubuntu
-            ansible-playbook -i inventory.ini deploy.yml --tags frontend -v
-            echo "Frontend deployment complete!"
+            export PATH=$PATH:/usr/local/bin:/snap/bin
+            cd ~/yesen-crm-frontend
+            git reset --hard origin/main
+            git pull origin main
+            docker build -t yesen-crm-frontend:latest .
+            minikube image load yesen-crm-frontend:latest
+            kubectl rollout restart deployment/frontend-deployment -n yesen-crm
+            kubectl rollout status deployment/frontend-deployment -n yesen-crm --timeout=120s
