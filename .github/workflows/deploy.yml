@@ -1,4 +1,4 @@
-name: Deploy Backend to Azure VM
+name: Deploy Frontend to Azure VM
 
 on:
   push:
@@ -11,14 +11,38 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy to Azure VM via SSH
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: '9'
+          run_install: false
+
+      - name: Install dependencies & build
+        run: |
+          pnpm install
+          pnpm build
+        env:
+          VITE_API_BASE_URL: http://${{ secrets.AZURE_BACKEND_IP }}:5001/api/v1
+
+      - name: Copy build files to Azure VM
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.AZURE_FRONTEND_VM_HOST }}
+          username: ${{ secrets.AZURE_VM_USERNAME }}
+          password: ${{ secrets.AZURE_VM_PASSWORD }}
+          source: "dist/*"
+          target: "/home/azureuser/frontend/"
+
+      - name: Restart Nginx on Frontend VM
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.AZURE_VM_HOST }}
+          host: ${{ secrets.AZURE_FRONTEND_VM_HOST }}
           username: ${{ secrets.AZURE_VM_USERNAME }}
           password: ${{ secrets.AZURE_VM_PASSWORD }}
           script: |
-            cd /home/azureuser/backend
-            git pull origin main
-            pnpm install --prod
-            npx pm2 restart yesen-backend
+            sudo systemctl restart nginx
