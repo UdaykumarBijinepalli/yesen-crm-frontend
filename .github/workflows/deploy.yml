@@ -18,7 +18,7 @@ jobs:
           username: ${{ secrets.AZURE_VM_USERNAME }}
           password: ${{ secrets.AZURE_VM_PASSWORD }}
           script: |
-            cd ~/backend
+            cd /home/azureuser/backend
             git pull origin main
             pnpm install --prod
-            pm2 restart yesen-backend
+            npx pm2 restart yesen-backend
